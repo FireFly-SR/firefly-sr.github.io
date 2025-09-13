@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>沉浸式音频可视化播放器</title>
+    <title>音频可视化V2.0</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -22,7 +22,7 @@
             position: relative;
         }
         
-        #videoBackground {
+        #videoBackground, #imageBackground {
             position: absolute;
             top: 0;
             left: 0;
@@ -30,6 +30,10 @@
             height: 100%;
             object-fit: cover;
             z-index: 0;
+        }
+        
+        #imageBackground {
+            display: none; /* 默认隐藏图片背景 */
         }
         
         #audioCanvas {
@@ -710,10 +714,11 @@
 </head>
 <body>
     <video id="videoBackground" autoplay loop muted></video>
+    <img id="imageBackground" alt="背景图片"> <!-- 新增图片背景元素 -->
     <canvas id="audioCanvas"></canvas>
     
     <!-- 顶部歌曲标题 -->
-    <div class="song-title-bar" id="songTitle">请上传音频文件</div>
+    <div class="song-title-bar" id="songTitle">满穗最可爱了！</div>
     
     <!-- 字幕显示区域 -->
     <div id="subtitleContainer">
@@ -722,7 +727,7 @@
                 <i class="fas fa-times"></i>
             </div>
         </div>
-        <div id="subtitleText">字幕将在这里显示</div>
+        <div id="subtitleText">一个BUG是BUG，一堆BUG就能RUN</div>
     </div>
     
     <!-- 底部控制条 -->
@@ -767,7 +772,7 @@
     <!-- 侧边工具栏 -->
     <div class="sidebar">
         <div class="sidebar-header">
-            <h2>沉浸式音频播放器</h2>
+            <h2>By：阿萨拉技术部门[BiliBili]</h2>
         </div>
         
         <div class="sidebar-content">
@@ -881,6 +886,15 @@
                     <input type="file" id="videoFile" accept="video/*">
                 </div>
                 
+                <!-- 新增图片上传控件 -->
+                <div class="file-upload">
+                    <label for="imageFile" class="file-label">
+                        <i class="fas fa-image"></i>
+                        <span>上传背景图片</span>
+                    </label>
+                    <input type="file" id="imageFile" accept="image/*">
+                </div>
+                
                 <div class="control-group">
                     <button id="playBtn" class="visual-btn">
                         <i class="fas fa-play"></i>
@@ -922,7 +936,7 @@
                 <div class="slider-container">
                     <label for="brightness">
                         <i class="fas fa-sun"></i>
-                        <span>视频亮度:</span>
+                        <span>背景亮度:</span>
                     </label>
                     <input type="range" id="brightness" min="0.3" max="1" step="0.05" value="0.8">
                 </div>
@@ -1032,6 +1046,7 @@
         let isDraggingIndicator = false;
         let indicatorOffsetX = 0;
         let indicatorOffsetY = 0;
+        let currentBackgroundType = 'video'; // 'video' 或 'image'
         
         // 字幕相关变量
         let subtitles = [];
@@ -1052,6 +1067,7 @@
         // 获取DOM元素
         const audioFile = document.getElementById('audioFile');
         const videoFile = document.getElementById('videoFile');
+        const imageFile = document.getElementById('imageFile'); // 新增图片文件元素
         const playBtn = document.getElementById('playBtn');
         const pauseBtn = document.getElementById('pauseBtn');
         const stopBtn = document.getElementById('stopBtn');
@@ -1069,6 +1085,7 @@
         const songTitle = document.getElementById('songTitle');
         const audioCanvas = document.getElementById('audioCanvas');
         const videoBackground = document.getElementById('videoBackground');
+        const imageBackground = document.getElementById('imageBackground'); // 新增图片背景元素
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         const menuBtn = document.querySelector('.menu-btn');
         const sidebar = document.querySelector('.sidebar');
@@ -1444,6 +1461,20 @@
             });
         }
         
+        // 切换到图片背景的函数
+        function switchToImageBackground() {
+            currentBackgroundType = 'image';
+            videoBackground.style.display = 'none';
+            imageBackground.style.display = 'block';
+        }
+        
+        // 切换到视频背景的函数
+        function switchToVideoBackground() {
+            currentBackgroundType = 'video';
+            imageBackground.style.display = 'none';
+            videoBackground.style.display = 'block';
+        }
+        
         // 歌单功能实现
         function createPlaylist(name) {
             if (!name || name.trim() === '') {
@@ -1668,6 +1699,24 @@
             
             const fileURL = URL.createObjectURL(file);
             videoBackground.src = fileURL;
+            switchToVideoBackground();
+        });
+        
+        // 处理图片上传事件
+        imageFile.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                alert('请选择图片文件');
+                return;
+            }
+            
+            const fileURL = URL.createObjectURL(file);
+            imageBackground.src = fileURL;
+            
+            // 切换到图片背景
+            switchToImageBackground();
         });
         
         playBtn.addEventListener('click', togglePlayback);
@@ -1717,7 +1766,9 @@
         });
         
         brightnessSlider.addEventListener('input', function() {
-            videoBackground.style.filter = `brightness(${brightnessSlider.value})`;
+            const brightnessValue = brightnessSlider.value;
+            videoBackground.style.filter = `brightness(${brightnessValue})`;
+            imageBackground.style.filter = `brightness(${brightnessValue})`;
         });
         
         barThicknessSlider.addEventListener('input', function() {
