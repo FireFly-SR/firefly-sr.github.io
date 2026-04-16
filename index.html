@@ -2,202 +2,936 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GZITVS</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aura Run - 豪华跑步记录</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --bg-color: #0b0f19;
+            --surface: rgba(255, 255, 255, 0.03);
+            --surface-border: rgba(255, 255, 255, 0.08);
         }
-        
+
         body {
-            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: white;
+            overflow-x: hidden;
+            overscroll-behavior-y: none; /* 阻止 iOS 下拉刷新 */
+        }
+
+        .number-font {
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        /* 动态背景光晕 */
+        .bg-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(79, 172, 254, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+            top: -200px;
+            left: -200px;
+            z-index: -1;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .bg-glow-2 {
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(0, 242, 254, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+            bottom: -100px;
+            right: -100px;
+            z-index: -1;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* 玻璃态卡片 */
+        .glass-card {
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--surface-border);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        /* 主进度环与呼吸特效 */
+        .ring-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(135deg, #0d4a9c 0%, #1a5fb4 50%, #26a269 100%);
-            color: white;
-            overflow: hidden;
+            border-radius: 50%;
         }
-        
-        .title-container {
-            text-align: center;
-            padding: 20px;
-            position: relative;
-            z-index: 2;
-        }
-        
-        .main-title {
-            font-size: 8vw;
-            font-weight: 900;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-            text-shadow: 3px 3px 10px rgba(0, 0, 0, 0.3);
-            line-height: 1.1;
-        }
-        
-        .subtitle {
-            font-size: 1.5rem;
-            opacity: 0.9;
-            font-weight: 300;
-            letter-spacing: 2px;
-            margin-top: 10px;
-        }
-        
-        .title-container::before {
+
+        .ring-container::before {
             content: '';
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 150%;
-            height: 150%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
-            z-index: -1;
-        }
-        
-        /* 背景动画元素 */
-        .bg-shapes {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-            overflow: hidden;
-        }
-        
-        .shape {
-            position: absolute;
-            opacity: 0.1;
-        }
-        
-        .shape-circle {
+            inset: 0;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
+            padding: 4px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.3;
+            transition: all 0.5s ease;
+        }
+
+        .is-running .ring-container::before {
+            opacity: 1;
+            box-shadow: 0 0 40px rgba(0, 242, 254, 0.4);
+            animation: pulse-ring 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        @keyframes pulse-ring {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 60px rgba(0, 242, 254, 0.6); }
+        }
+
+        /* 按钮渐变与动画 */
+        .btn-gradient-start {
+            background: linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
         
-        .shape-square {
+        .btn-gradient-start:active {
+            transform: scale(0.95);
+        }
+
+        .btn-gradient-pause {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+
+        .btn-gradient-stop {
+            background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
             background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
         }
         
-        /* 响应式调整 */
-        @media (max-width: 768px) {
-            .main-title {
-                font-size: 12vw;
-                letter-spacing: 2px;
-            }
-            
-            .subtitle {
-                font-size: 1.2rem;
-                letter-spacing: 1px;
-            }
+        /* 模拟开关 */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #00f2fe;
         }
-        
-        @media (max-width: 480px) {
-            .main-title {
-                font-size: 15vw;
-                letter-spacing: 1px;
-            }
-            
-            .subtitle {
-                font-size: 1rem;
-            }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #00f2fe;
         }
     </style>
 </head>
-<body>
-    <div class="bg-shapes" id="bgShapes"></div>
+<body class="min-h-screen flex flex-col items-center justify-start pb-24 relative select-none">
     
-    <div class="title-container">
-        <h1 class="main-title">SZ厂信</h1>
-        <p class="subtitle">正德 · 笃学 · 强技 · 致远</p>
+    <!-- 背景光效 -->
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+
+    <!-- 顶部导航 -->
+    <header class="w-full max-w-md px-6 py-5 flex justify-between items-center z-10">
+        <div>
+            <h1 class="text-2xl font-bold tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">AURA RUN</h1>
+            <p class="text-xs text-gray-400 font-medium">PRO TRACKER</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <!-- 模拟开关 -->
+            <div class="flex flex-col items-end">
+                <span class="text-[10px] text-gray-500 mb-1">GPS模拟器</span>
+                <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                    <input type="checkbox" name="toggle" id="simToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 transition-transform duration-300 ease-in-out"/>
+                    <label for="simToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer transition-colors duration-300 ease-in-out"></label>
+                </div>
+            </div>
+            <!-- 历史记录与主页切换按钮 -->
+            <button id="navHistoryBtn" class="w-10 h-10 rounded-full glass-card flex items-center justify-center text-gray-300 active:scale-95 transition-transform">
+                <i data-lucide="list" class="w-5 h-5"></i>
+            </button>
+            <button id="navTrackerBtn" class="hidden w-10 h-10 rounded-full glass-card flex items-center justify-center text-cyan-400 active:scale-95 transition-transform shadow-[0_0_15px_rgba(0,242,254,0.3)]">
+                <i data-lucide="activity" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主数据区 (距离) -->
+    <main id="trackerView" class="w-full max-w-md px-6 flex-1 flex flex-col items-center justify-center z-10 mt-4">
+        
+        <!-- 中央雷达环 -->
+        <div id="mainRing" class="ring-container mb-10">
+            <div class="flex flex-col items-center justify-center z-10">
+                <span class="text-gray-400 text-sm font-medium tracking-widest mb-1 uppercase">当前距离</span>
+                <div class="flex items-baseline">
+                    <span id="distance" class="text-7xl font-bold number-font tracking-tighter text-white">0.00</span>
+                    <span class="text-xl text-gray-400 ml-1 font-medium">km</span>
+                </div>
+                
+                <div class="mt-4 flex items-center gap-2 glass-card px-4 py-1.5 rounded-full">
+                    <div id="statusDot" class="w-2 h-2 rounded-full bg-gray-500"></div>
+                    <span id="statusText" class="text-xs font-semibold text-gray-300">准备就绪</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 数据网格 -->
+        <div class="grid grid-cols-2 gap-4 w-full">
+            <!-- 时长 -->
+            <div class="glass-card p-4 flex flex-col justify-center relative overflow-hidden">
+                <i data-lucide="clock" class="w-5 h-5 text-cyan-400 absolute top-4 right-4 opacity-50"></i>
+                <span class="text-xs text-gray-400 font-medium mb-1">运动时长</span>
+                <span id="duration" class="text-2xl font-bold number-font">00:00:00</span>
+            </div>
+            
+            <!-- 配速 -->
+            <div class="glass-card p-4 flex flex-col justify-center relative overflow-hidden">
+                <i data-lucide="zap" class="w-5 h-5 text-yellow-400 absolute top-4 right-4 opacity-50"></i>
+                <span class="text-xs text-gray-400 font-medium mb-1">当前配速</span>
+                <div class="flex items-baseline">
+                    <span id="pace" class="text-2xl font-bold number-font">0'00"</span>
+                    <span class="text-xs text-gray-500 ml-1">/km</span>
+                </div>
+            </div>
+
+            <!-- 步数 (推演) -->
+            <div class="glass-card p-4 flex flex-col justify-center relative overflow-hidden">
+                <i data-lucide="footprints" class="w-5 h-5 text-green-400 absolute top-4 right-4 opacity-50"></i>
+                <span class="text-xs text-gray-400 font-medium mb-1">预估步数</span>
+                <div class="flex items-baseline">
+                    <span id="steps" class="text-2xl font-bold number-font text-green-300">0</span>
+                    <span class="text-xs text-gray-500 ml-1">步</span>
+                </div>
+            </div>
+
+            <!-- 卡路里 -->
+            <div class="glass-card p-4 flex flex-col justify-center relative overflow-hidden">
+                <i data-lucide="flame" class="w-5 h-5 text-orange-400 absolute top-4 right-4 opacity-50"></i>
+                <span class="text-xs text-gray-400 font-medium mb-1">燃烧热量</span>
+                <div class="flex items-baseline">
+                    <span id="calories" class="text-2xl font-bold number-font text-orange-300">0</span>
+                    <span class="text-xs text-gray-500 ml-1">千卡</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 历史记录区 (默认隐藏) -->
+    <main id="historyView" class="hidden w-full max-w-md px-6 flex-1 flex-col items-center justify-start z-10 mt-4 pb-32 overflow-y-auto">
+        <div class="flex justify-between items-center w-full mb-6">
+            <h2 class="text-xl font-bold tracking-wide">运动足迹</h2>
+            <button id="addManualBtn" class="w-8 h-8 rounded-full bg-cyan-500/20 text-cyan-400 flex items-center justify-center active:scale-95 transition-transform">
+                <i data-lucide="plus" class="w-5 h-5"></i>
+            </button>
+        </div>
+        
+        <!-- 列表容器 -->
+        <div id="historyList" class="w-full flex flex-col gap-4">
+            <!-- 卡片由JS动态生成 -->
+        </div>
+        
+        <div id="emptyHistory" class="hidden flex-col items-center justify-center mt-20 opacity-50">
+            <i data-lucide="footprints" class="w-12 h-12 mb-4"></i>
+            <p class="text-sm">暂无运动记录，开始奔跑吧！</p>
+        </div>
+    </main>
+
+    <!-- 底部控制栏 -->
+    <div id="bottomBar" class="fixed bottom-0 w-full max-w-md p-6 pb-10 bg-gradient-to-t from-black via-black/80 to-transparent z-20 flex justify-center items-center transition-transform duration-500">
+        
+        <!-- 未开始时显示一个大按钮 -->
+        <button id="startBtn" class="btn-gradient-start w-20 h-20 rounded-full flex justify-center items-center shadow-[0_0_30px_rgba(0,201,255,0.4)] text-black relative z-10 transition-all duration-300">
+            <i data-lucide="play" class="w-8 h-8 ml-1"></i>
+        </button>
+
+        <!-- 跑步中显示的两个按钮（暂停和停止），默认隐藏 -->
+        <div id="actionBtns" class="flex gap-6 opacity-0 translate-y-10 pointer-events-none absolute transition-all duration-500 ease-out">
+            <button id="pauseBtn" class="btn-gradient-pause w-16 h-16 rounded-full flex justify-center items-center shadow-lg text-black active:scale-95 transition-transform">
+                <i data-lucide="pause" class="w-6 h-6"></i>
+            </button>
+            <button id="stopBtn" class="btn-gradient-stop w-16 h-16 rounded-full flex justify-center items-center shadow-lg text-black active:scale-95 transition-transform">
+                <i data-lucide="square" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- 结算模态框 (隐藏) -->
+    <div id="summaryModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-6">
+        <div class="glass-card w-full max-w-sm p-8 flex flex-col items-center transform scale-95 transition-transform duration-300" id="summaryCard">
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-cyan-500 flex items-center justify-center mb-4">
+                <i data-lucide="check" class="w-8 h-8 text-white"></i>
+            </div>
+            <h2 class="text-2xl font-bold mb-2">运动完成</h2>
+            <p class="text-gray-400 text-sm mb-6 text-center">优秀的表现！您的本次运动数据已成功记录。</p>
+            
+            <div class="w-full bg-black/30 rounded-xl p-4 mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-400 text-sm">总距离</span>
+                    <span class="font-bold number-font text-cyan-400"><span id="sumDistance">0.00</span> km</span>
+                </div>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-400 text-sm">总用时</span>
+                    <span class="font-bold number-font"><span id="sumTime">00:00:00</span></span>
+                </div>
+                <div class="flex justify-between items-center mb-3">
+                    <span class="text-gray-400 text-sm">共计步数</span>
+                    <span class="font-bold number-font text-green-400"><span id="sumSteps">0</span> 步</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-gray-400 text-sm">燃烧卡路里</span>
+                    <span class="font-bold number-font text-orange-400"><span id="sumCalories">0</span> kcal</span>
+                </div>
+            </div>
+            
+            <button id="closeModalBtn" class="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 transition-colors font-medium">
+                关闭并重置
+            </button>
+        </div>
+    </div>
+
+    <!-- 手动/编辑记录模态框 (隐藏) -->
+    <div id="editModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 flex items-center justify-center p-6">
+        <div class="glass-card w-full max-w-sm p-6 flex flex-col items-center transform scale-95 transition-transform duration-300" id="editCard">
+            <div class="w-full flex justify-between items-center mb-6">
+                <h2 id="editModalTitle" class="text-xl font-bold">添加运动记录</h2>
+                <button id="closeEditBtn" class="text-gray-400 hover:text-white transition-colors"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            
+            <div class="w-full flex flex-col gap-4">
+                <input type="hidden" id="editId">
+                
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block">运动距离 (km)</label>
+                    <input type="number" id="editDistance" step="0.01" class="w-full bg-black/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-gray-600" placeholder="例如: 5.20">
+                </div>
+                
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block">耗时 (分钟/秒)</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="editDurationMin" class="w-1/2 bg-black/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-gray-600" placeholder="分钟">
+                        <input type="number" id="editDurationSec" max="59" class="w-1/2 bg-black/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-gray-600" placeholder="秒">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-xs text-gray-400 mb-1 block">定位地址</label>
+                    <input type="text" id="editLocation" class="w-full bg-black/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-gray-600" placeholder="例如: 奥林匹克森林公园">
+                </div>
+            </div>
+            
+            <button id="saveEditBtn" class="w-full mt-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold active:scale-95 transition-transform shadow-lg shadow-cyan-500/30">
+                保存记录
+            </button>
+        </div>
+    </div>
+
+    <!-- 弹窗提示组件 -->
+    <div id="toast" class="fixed top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg text-sm font-medium opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center gap-2">
+        <i data-lucide="info" class="w-4 h-4 text-cyan-400"></i>
+        <span id="toastMsg">提示信息</span>
     </div>
 
     <script>
-        // 创建背景动画元素
-        document.addEventListener('DOMContentLoaded', function() {
-            const bgShapes = document.getElementById('bgShapes');
-            const colors = [
-                'rgba(255, 255, 255, 0.1)',
-                'rgba(255, 255, 255, 0.15)',
-                'rgba(255, 255, 255, 0.2)'
-            ];
+        // 初始化 Lucide 图标
+        lucide.createIcons();
+
+        // 核心应用逻辑
+        const App = {
+            state: {
+                isRunning: false,
+                isPaused: false,
+                startTime: null,
+                elapsedTime: 0, // 毫秒
+                distanceKm: 0,
+                steps: 0,
+                calories: 0,
+                timerInterval: null,
+                geoWatchId: null,
+                lastPosition: null,
+                isSimulation: false, // 是否开启模拟模式
+                simInterval: null,
+                records: [], // 存储所有的运动记录
+                clickCounts: {} // 存储卡片连击数据
+            },
             
-            // 创建多个背景形状
-            for (let i = 0; i < 15; i++) {
-                const shape = document.createElement('div');
-                shape.classList.add('shape');
+            // DOM 元素引用
+            dom: {
+                trackerView: document.getElementById('trackerView'),
+                historyView: document.getElementById('historyView'),
+                bottomBar: document.getElementById('bottomBar'),
+                navHistoryBtn: document.getElementById('navHistoryBtn'),
+                navTrackerBtn: document.getElementById('navTrackerBtn'),
+                historyList: document.getElementById('historyList'),
+                emptyHistory: document.getElementById('emptyHistory'),
+                addManualBtn: document.getElementById('addManualBtn'),
                 
-                // 随机选择形状类型
-                if (Math.random() > 0.5) {
-                    shape.classList.add('shape-circle');
+                editModal: document.getElementById('editModal'),
+                editCard: document.getElementById('editCard'),
+                closeEditBtn: document.getElementById('closeEditBtn'),
+                saveEditBtn: document.getElementById('saveEditBtn'),
+                editId: document.getElementById('editId'),
+                editDistance: document.getElementById('editDistance'),
+                editDurationMin: document.getElementById('editDurationMin'),
+                editDurationSec: document.getElementById('editDurationSec'),
+                editLocation: document.getElementById('editLocation'),
+                editModalTitle: document.getElementById('editModalTitle'),
+
+                mainRing: document.getElementById('mainRing'),
+                distance: document.getElementById('distance'),
+                duration: document.getElementById('duration'),
+                pace: document.getElementById('pace'),
+                steps: document.getElementById('steps'),
+                calories: document.getElementById('calories'),
+                statusText: document.getElementById('statusText'),
+                statusDot: document.getElementById('statusDot'),
+                
+                startBtn: document.getElementById('startBtn'),
+                actionBtns: document.getElementById('actionBtns'),
+                pauseBtn: document.getElementById('pauseBtn'),
+                stopBtn: document.getElementById('stopBtn'),
+                
+                simToggle: document.getElementById('simToggle'),
+                
+                modal: document.getElementById('summaryModal'),
+                modalCard: document.getElementById('summaryCard'),
+                closeModalBtn: document.getElementById('closeModalBtn'),
+                toast: document.getElementById('toast'),
+                toastMsg: document.getElementById('toastMsg')
+            },
+
+            init() {
+                this.loadRecords(); // 加载历史记录
+                this.bindEvents();
+                // 设置初始状态下checkbox的监听
+                this.dom.simToggle.addEventListener('change', (e) => {
+                    this.state.isSimulation = e.target.checked;
+                    if(e.target.checked) {
+                        this.showToast("已开启GPS模拟运动模式");
+                    } else {
+                        this.showToast("已切换至真实GPS定位");
+                    }
+                });
+            },
+
+            bindEvents() {
+                this.dom.startBtn.addEventListener('click', () => this.start());
+                this.dom.pauseBtn.addEventListener('click', () => this.togglePause());
+                this.dom.stopBtn.addEventListener('click', () => this.stop());
+                this.dom.closeModalBtn.addEventListener('click', () => this.closeModal());
+                
+                // 导航视图切换
+                this.dom.navHistoryBtn.addEventListener('click', () => this.switchView('history'));
+                this.dom.navTrackerBtn.addEventListener('click', () => this.switchView('tracker'));
+                
+                // 手动记录操作
+                this.dom.addManualBtn.addEventListener('click', () => this.openEditModal());
+                this.dom.closeEditBtn.addEventListener('click', () => this.closeEditModal());
+                this.dom.saveEditBtn.addEventListener('click', () => this.saveRecord());
+            },
+
+            switchView(view) {
+                if (view === 'history') {
+                    this.dom.trackerView.classList.add('hidden');
+                    this.dom.historyView.classList.remove('hidden');
+                    this.dom.navHistoryBtn.classList.add('hidden');
+                    this.dom.navTrackerBtn.classList.remove('hidden');
+                    this.dom.bottomBar.classList.add('translate-y-full', 'opacity-0'); // 隐藏底部按钮
+                    this.renderHistory();
                 } else {
-                    shape.classList.add('shape-square');
+                    this.dom.historyView.classList.add('hidden');
+                    this.dom.trackerView.classList.remove('hidden');
+                    this.dom.navTrackerBtn.classList.add('hidden');
+                    this.dom.navHistoryBtn.classList.remove('hidden');
+                    this.dom.bottomBar.classList.remove('translate-y-full', 'opacity-0'); // 显示底部按钮
+                }
+            },
+
+            start() {
+                if (this.state.isRunning) return;
+                
+                // 获取定位权限测试 (真实模式下)
+                if (!this.state.isSimulation && !navigator.geolocation) {
+                    this.showToast("您的浏览器不支持GPS定位，请开启模拟模式体验。");
+                    return;
+                }
+
+                this.state.isRunning = true;
+                this.state.isPaused = false;
+                this.state.startTime = Date.now() - this.state.elapsedTime;
+                
+                this.updateUIForStart();
+                this.startTimer();
+                this.startTracking();
+            },
+
+            togglePause() {
+                this.state.isPaused = !this.state.isPaused;
+                if (this.state.isPaused) {
+                    clearInterval(this.state.timerInterval);
+                    this.stopTracking();
+                    
+                    this.dom.statusText.textContent = "已暂停";
+                    this.dom.statusDot.className = "w-2 h-2 rounded-full bg-yellow-500";
+                    this.dom.mainRing.classList.remove('is-running');
+                    this.dom.pauseBtn.innerHTML = '<i data-lucide="play" class="w-6 h-6"></i>';
+                    lucide.createIcons();
+                } else {
+                    this.state.startTime = Date.now() - this.state.elapsedTime;
+                    this.startTimer();
+                    this.startTracking();
+                    
+                    this.dom.statusText.textContent = "运动中";
+                    this.dom.statusDot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]";
+                    this.dom.mainRing.classList.add('is-running');
+                    this.dom.pauseBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>';
+                    lucide.createIcons();
+                }
+            },
+
+            stop() {
+                clearInterval(this.state.timerInterval);
+                this.stopTracking();
+                this.state.isRunning = false;
+                
+                // 显示结算
+                this.showSummaryModal();
+            },
+
+            resetData() {
+                this.state = {
+                    ...this.state,
+                    isRunning: false,
+                    isPaused: false,
+                    startTime: null,
+                    elapsedTime: 0,
+                    distanceKm: 0,
+                    steps: 0,
+                    calories: 0,
+                    lastPosition: null
+                };
+                this.updateDisplay();
+                this.updateUIForStop();
+            },
+
+            startTimer() {
+                this.state.timerInterval = setInterval(() => {
+                    this.state.elapsedTime = Date.now() - this.state.startTime;
+                    this.updateDisplay();
+                }, 1000);
+            },
+
+            startTracking() {
+                if (this.state.isSimulation) {
+                    // 模拟模式：每秒增加随机距离 (模拟跑者配速大概 5-8分钟/公里，约 2-3 米/秒)
+                    this.state.simInterval = setInterval(() => {
+                        if (!this.state.isPaused) {
+                            const simulatedSpeed = 2.5 + Math.random(); // 2.5 ~ 3.5 m/s
+                            this.addDistance(simulatedSpeed / 1000); // 转换为 km
+                        }
+                    }, 1000);
+                } else {
+                    // 真实 GPS 模式
+                    const options = { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 };
+                    this.state.geoWatchId = navigator.geolocation.watchPosition(
+                        (position) => this.handlePositionUpdate(position),
+                        (error) => {
+                            console.warn("GPS Error:", error);
+                            this.showToast("无法获取精确位置，请检查权限。");
+                        },
+                        options
+                    );
+                }
+            },
+
+            stopTracking() {
+                if (this.state.simInterval) clearInterval(this.state.simInterval);
+                if (this.state.geoWatchId && navigator.geolocation) {
+                    navigator.geolocation.clearWatch(this.state.geoWatchId);
+                }
+            },
+
+            handlePositionUpdate(position) {
+                if (!this.state.lastPosition) {
+                    this.state.lastPosition = position.coords;
+                    return;
+                }
+
+                const currentCoords = position.coords;
+                const distInKm = this.calculateHaversineDistance(
+                    this.state.lastPosition.latitude,
+                    this.state.lastPosition.longitude,
+                    currentCoords.latitude,
+                    currentCoords.longitude
+                );
+
+                // 过滤掉漂移点 (如果1秒内移动超过一定距离视为异常点，比如速度大于 10m/s 即 36km/h)
+                if (distInKm > 0 && distInKm < 0.05) { 
+                    this.addDistance(distInKm);
                 }
                 
-                // 随机大小和位置
-                const size = Math.random() * 100 + 20;
-                shape.style.width = `${size}px`;
-                shape.style.height = `${size}px`;
-                shape.style.left = `${Math.random() * 100}%`;
-                shape.style.top = `${Math.random() * 100}%`;
+                this.state.lastPosition = currentCoords;
+            },
+
+            addDistance(km) {
+                this.state.distanceKm += km;
+                // 推算：平均步幅约 0.78米
+                this.state.steps = Math.floor((this.state.distanceKm * 1000) / 0.78);
+                // 推算：粗略卡路里 = 体重(65kg) * 距离(km) * 1.036
+                this.state.calories = Math.floor(65 * this.state.distanceKm * 1.036);
                 
-                // 随机颜色
-                shape.style.background = colors[Math.floor(Math.random() * colors.length)];
+                this.updateDisplay();
+            },
+
+            // 计算两点经纬度距离 (千米)
+            calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371; // 地球半径(km)
+                const dLat = this.deg2rad(lat2 - lat1);
+                const dLon = this.deg2rad(lon2 - lon1);
+                const a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+                return R * c;
+            },
+
+            deg2rad(deg) {
+                return deg * (Math.PI/180);
+            },
+
+            updateDisplay() {
+                // 格式化时间 HH:MM:SS
+                let totalSeconds = Math.floor(this.state.elapsedTime / 1000);
+                let hours = Math.floor(totalSeconds / 3600);
+                let minutes = Math.floor((totalSeconds % 3600) / 60);
+                let seconds = totalSeconds % 60;
+                this.dom.duration.textContent = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                // 距离
+                this.dom.distance.textContent = this.state.distanceKm.toFixed(2);
                 
-                // 随机旋转
-                shape.style.transform = `rotate(${Math.random() * 360}deg)`;
+                // 步数与卡路里
+                this.dom.steps.textContent = this.state.steps.toLocaleString();
+                this.dom.calories.textContent = this.state.calories.toLocaleString();
+
+                // 配速 (分钟/公里)
+                if (this.state.distanceKm > 0.01) { // 大于10米才开始计算配速
+                    let paceInMinutes = (totalSeconds / 60) / this.state.distanceKm;
+                    let paceMin = Math.floor(paceInMinutes);
+                    let paceSec = Math.floor((paceInMinutes - paceMin) * 60);
+                    // 限制最大配速显示
+                    if (paceMin > 99) paceMin = 99;
+                    this.dom.pace.textContent = `${paceMin}'${paceSec.toString().padStart(2, '0')}"`;
+                } else {
+                    this.dom.pace.textContent = `0'00"`;
+                }
+            },
+
+            updateUIForStart() {
+                // 隐藏主开始按钮
+                this.dom.startBtn.classList.add('opacity-0', 'scale-50', 'pointer-events-none');
+                this.dom.startBtn.classList.remove('z-10');
                 
-                // 添加到背景
-                bgShapes.appendChild(shape);
+                // 显示暂停和停止按钮
+                setTimeout(() => {
+                    this.dom.actionBtns.classList.remove('opacity-0', 'translate-y-10', 'pointer-events-none');
+                    this.dom.actionBtns.classList.add('opacity-100', 'translate-y-0', 'z-10');
+                }, 150);
+
+                // 更新状态与动画
+                this.dom.mainRing.classList.add('is-running');
+                this.dom.statusText.textContent = "运动中 (GPS追踪中)";
+                this.dom.statusDot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]";
+                this.dom.pauseBtn.innerHTML = '<i data-lucide="pause" class="w-6 h-6"></i>';
+                lucide.createIcons();
+            },
+
+            updateUIForStop() {
+                // 隐藏动作按钮
+                this.dom.actionBtns.classList.remove('opacity-100', 'translate-y-0', 'z-10');
+                this.dom.actionBtns.classList.add('opacity-0', 'translate-y-10', 'pointer-events-none');
                 
-                // 添加漂浮动画
-                animateShape(shape);
-            }
-            
-            // 形状浮动动画函数
-            function animateShape(element) {
-                let x = parseFloat(element.style.left);
-                let y = parseFloat(element.style.top);
-                let xSpeed = (Math.random() - 0.5) * 0.1;
-                let ySpeed = (Math.random() - 0.5) * 0.1;
+                // 显示主开始按钮
+                setTimeout(() => {
+                    this.dom.startBtn.classList.remove('opacity-0', 'scale-50', 'pointer-events-none');
+                    this.dom.startBtn.classList.add('z-10');
+                }, 300);
+
+                // 重置状态与动画
+                this.dom.mainRing.classList.remove('is-running');
+                this.dom.statusText.textContent = "准备就绪";
+                this.dom.statusDot.className = "w-2 h-2 rounded-full bg-gray-500";
+            },
+
+            showSummaryModal() {
+                // 填充结算数据
+                document.getElementById('sumDistance').textContent = this.state.distanceKm.toFixed(2);
+                document.getElementById('sumTime').textContent = this.dom.duration.textContent;
+                document.getElementById('sumSteps').textContent = this.state.steps.toLocaleString();
+                document.getElementById('sumCalories').textContent = this.state.calories.toLocaleString();
+
+                // 显示动画
+                this.dom.modal.classList.remove('opacity-0', 'pointer-events-none');
+                this.dom.modalCard.classList.remove('scale-95');
+                this.dom.modalCard.classList.add('scale-100');
+            },
+
+            closeModal() {
+                this.dom.modal.classList.add('opacity-0', 'pointer-events-none');
+                this.dom.modalCard.classList.remove('scale-100');
+                this.dom.modalCard.classList.add('scale-95');
                 
-                function move() {
-                    x += xSpeed;
-                    y += ySpeed;
-                    
-                    // 边界检查
-                    if (x > 100 || x < 0) xSpeed = -xSpeed;
-                    if (y > 100 || y < 0) ySpeed = -ySpeed;
-                    
-                    // 确保形状在边界内
-                    x = Math.max(0, Math.min(100, x));
-                    y = Math.max(0, Math.min(100, y));
-                    
-                    element.style.left = `${x}%`;
-                    element.style.top = `${y}%`;
-                    
-                    requestAnimationFrame(move);
+                // 如果产生了有效的运动距离，自动保存入历史记录
+                if (this.state.distanceKm > 0.01) {
+                    this.addRecordToHistory({
+                        distance: this.state.distanceKm,
+                        durationMs: this.state.elapsedTime,
+                        location: "系统自动记录 (未填定位)"
+                    });
+                }
+
+                // 等待动画结束重置数据
+                setTimeout(() => {
+                    this.resetData();
+                }, 300);
+            },
+
+            // --- 运动记录与历史逻辑部分 ---
+
+            loadRecords() {
+                const saved = localStorage.getItem('auraRunRecords');
+                if (saved) {
+                    this.state.records = JSON.parse(saved);
+                }
+            },
+
+            saveToLocal() {
+                localStorage.setItem('auraRunRecords', JSON.stringify(this.state.records));
+            },
+
+            addRecordToHistory(data) {
+                // 1. 推算配速 (分钟/公里)
+                const totalSeconds = Math.floor(data.durationMs / 1000);
+                let paceStr = "0'00\"";
+                if (data.distance > 0) {
+                    let paceInMinutes = (totalSeconds / 60) / data.distance;
+                    let paceMin = Math.floor(paceInMinutes);
+                    let paceSec = Math.floor((paceInMinutes - paceMin) * 60);
+                    paceStr = `${Math.min(paceMin, 99)}'${paceSec.toString().padStart(2, '0')}"`;
                 }
                 
-                move();
+                // 2. 推算步数 (基于0.78米步幅)
+                const steps = Math.floor((data.distance * 1000) / 0.78);
+                
+                // 格式化耗时字符串
+                let hours = Math.floor(totalSeconds / 3600);
+                let minutes = Math.floor((totalSeconds % 3600) / 60);
+                let seconds = totalSeconds % 60;
+                let durationStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                // 日期格式化 (YYYY-MM-DD HH:MM)
+                const now = new Date();
+                const dateStr = `${now.getFullYear()}-${(now.getMonth()+1).toString().padStart(2,'0')}-${now.getDate().toString().padStart(2,'0')} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+
+                const newRecord = {
+                    id: data.id || Date.now(),
+                    date: data.date || dateStr, // 如果编辑则保留原日期
+                    distance: parseFloat(data.distance).toFixed(2),
+                    durationStr: durationStr,
+                    durationMs: data.durationMs,
+                    location: data.location || "未命名定位",
+                    pace: paceStr,
+                    steps: steps
+                };
+
+                if (data.id) {
+                    // 编辑覆盖模式
+                    const index = this.state.records.findIndex(r => r.id == data.id);
+                    if (index > -1) {
+                        this.state.records[index] = newRecord;
+                    }
+                } else {
+                    // 新增压入模式
+                    this.state.records.unshift(newRecord);
+                }
+
+                this.saveToLocal();
+            },
+
+            renderHistory() {
+                this.dom.historyList.innerHTML = '';
+                
+                if (this.state.records.length === 0) {
+                    this.dom.emptyHistory.classList.remove('hidden');
+                    this.dom.emptyHistory.classList.add('flex');
+                    return;
+                }
+                
+                this.dom.emptyHistory.classList.add('hidden');
+                this.dom.emptyHistory.classList.remove('flex');
+
+                this.state.records.forEach(record => {
+                    const card = document.createElement('div');
+                    // 绑定连击事件（避免文本被选中）
+                    card.className = "glass-card p-5 w-full relative overflow-hidden active:scale-[0.98] transition-transform select-none cursor-pointer";
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-xs text-gray-400"><i data-lucide="calendar" class="w-3 h-3 inline mr-1"></i>${record.date}</span>
+                            <span class="text-xs text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-full"><i data-lucide="map-pin" class="w-3 h-3 inline mr-1"></i>${record.location}</span>
+                        </div>
+                        <div class="flex items-baseline mb-4">
+                            <span class="text-4xl font-bold number-font text-white">${record.distance}</span>
+                            <span class="text-sm text-gray-400 ml-1">km</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 border-t border-white/10 pt-3">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-gray-500 mb-1">耗时</span>
+                                <span class="text-sm font-semibold number-font">${record.durationStr}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-gray-500 mb-1">平均配速</span>
+                                <span class="text-sm font-semibold number-font">${record.pace}</span>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[10px] text-gray-500 mb-1">推算步数</span>
+                                <span class="text-sm font-semibold number-font text-green-400">${record.steps}</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 绑定连续点击事件检测
+                    card.addEventListener('click', () => {
+                        this.handleCardClick(record.id);
+                    });
+
+                    this.dom.historyList.appendChild(card);
+                });
+                lucide.createIcons();
+            },
+
+            handleCardClick(id) {
+                // 初始化点击数据
+                if (!this.state.clickCounts[id]) {
+                    this.state.clickCounts[id] = { count: 0, timer: null };
+                }
+                
+                const clickData = this.state.clickCounts[id];
+                clickData.count++;
+                
+                // 清除之前的重置定时器
+                if (clickData.timer) clearTimeout(clickData.timer);
+                
+                // 判定是否达到10次连续点击
+                if (clickData.count >= 10) {
+                    clickData.count = 0; // 重置
+                    this.showToast("🔓 已进入数据编辑模式");
+                    const record = this.state.records.find(r => r.id === id);
+                    if (record) this.openEditModal(record);
+                } else {
+                    // 如果超过1秒没有下一次点击，重置计数
+                    clickData.timer = setTimeout(() => {
+                        clickData.count = 0;
+                    }, 1000);
+                }
+            },
+
+            openEditModal(record = null) {
+                if (record) {
+                    // 处于隐藏的编辑模式
+                    this.dom.editModalTitle.textContent = "编辑运动记录";
+                    this.dom.editId.value = record.id;
+                    this.dom.editDistance.value = record.distance;
+                    this.dom.editLocation.value = record.location;
+                    
+                    const totalSec = Math.floor(record.durationMs / 1000);
+                    this.dom.editDurationMin.value = Math.floor(totalSec / 60);
+                    this.dom.editDurationSec.value = totalSec % 60;
+                } else {
+                    // 处于手动新增模式
+                    this.dom.editModalTitle.textContent = "添加运动记录";
+                    this.dom.editId.value = "";
+                    this.dom.editDistance.value = "";
+                    this.dom.editLocation.value = "";
+                    this.dom.editDurationMin.value = "";
+                    this.dom.editDurationSec.value = "";
+                }
+                
+                this.dom.editModal.classList.remove('opacity-0', 'pointer-events-none');
+                this.dom.editCard.classList.remove('scale-95');
+                this.dom.editCard.classList.add('scale-100');
+            },
+
+            closeEditModal() {
+                this.dom.editModal.classList.add('opacity-0', 'pointer-events-none');
+                this.dom.editCard.classList.remove('scale-100');
+                this.dom.editCard.classList.add('scale-95');
+            },
+
+            saveRecord() {
+                const distance = parseFloat(this.dom.editDistance.value);
+                const min = parseInt(this.dom.editDurationMin.value) || 0;
+                const sec = parseInt(this.dom.editDurationSec.value) || 0;
+                const location = this.dom.editLocation.value;
+                const id = this.dom.editId.value;
+
+                if (isNaN(distance) || distance <= 0) {
+                    this.showToast("请输入有效的运动距离");
+                    return;
+                }
+                if (min === 0 && sec === 0) {
+                    this.showToast("请输入有效的耗时");
+                    return;
+                }
+
+                // 转换为毫秒数用于统一计算
+                const durationMs = ((min * 60) + sec) * 1000;
+                
+                let dateStr = undefined;
+                if (id) { // 如果是编辑旧记录，尝试保留它原本的创建日期
+                    const oldRecord = this.state.records.find(r => r.id == id);
+                    if (oldRecord) dateStr = oldRecord.date;
+                }
+
+                this.addRecordToHistory({
+                    id: id ? parseInt(id) : null,
+                    date: dateStr,
+                    distance: distance,
+                    durationMs: durationMs,
+                    location: location
+                });
+
+                this.closeEditModal();
+                this.renderHistory();
+                this.showToast("记录保存成功！");
+            },
+
+            showToast(message) {
+                this.dom.toastMsg.textContent = message;
+                this.dom.toast.classList.remove('opacity-0', 'pointer-events-none');
+                this.dom.toast.classList.add('opacity-100');
+                
+                setTimeout(() => {
+                    this.dom.toast.classList.remove('opacity-100');
+                    this.dom.toast.classList.add('opacity-0', 'pointer-events-none');
+                }, 3000);
             }
-            
-            // 添加标题悬停效果
-            const title = document.querySelector('.main-title');
-            title.addEventListener('mouseover', function() {
-                this.style.transform = 'scale(1.05)';
-                this.style.transition = 'transform 0.3s ease';
-            });
-            
-            title.addEventListener('mouseout', function() {
-                this.style.transform = 'scale(1)';
-            });
+        };
+
+        // 页面加载完毕后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            App.init();
         });
     </script>
 </body>
