@@ -326,6 +326,11 @@
                 </div>
 
                 <div>
+                    <label class="text-xs text-gray-400 mb-1 block">运动日期与时间</label>
+                    <input type="datetime-local" id="editDateTime" class="w-full bg-black/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-gray-600" style="color-scheme: dark;">
+                </div>
+
+                <div>
                     <label class="text-xs text-gray-400 mb-1 block">定位地址</label>
                     <input type="text" id="editLocation" class="w-full bg-black/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-400 transition-colors placeholder:text-gray-600" placeholder="例如: 奥林匹克森林公园">
                 </div>
@@ -386,6 +391,7 @@
                 editDurationMin: document.getElementById('editDurationMin'),
                 editDurationSec: document.getElementById('editDurationSec'),
                 editLocation: document.getElementById('editLocation'),
+                editDateTime: document.getElementById('editDateTime'),
                 editModalTitle: document.getElementById('editModalTitle'),
 
                 mainRing: document.getElementById('mainRing'),
@@ -848,12 +854,24 @@
             },
 
             openEditModal(record = null) {
+                // 获取当前本地时间用于默认填充
+                const getNowDateTimeLocal = () => {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                    const day = now.getDate().toString().padStart(2, '0');
+                    const hours = now.getHours().toString().padStart(2, '0');
+                    const minutes = now.getMinutes().toString().padStart(2, '0');
+                    return `${year}-${month}-${day}T${hours}:${minutes}`;
+                };
+
                 if (record) {
                     // 处于隐藏的编辑模式
                     this.dom.editModalTitle.textContent = "编辑运动记录";
                     this.dom.editId.value = record.id;
                     this.dom.editDistance.value = record.distance;
                     this.dom.editLocation.value = record.location;
+                    this.dom.editDateTime.value = record.date ? record.date.replace(' ', 'T') : getNowDateTimeLocal();
                     
                     const totalSec = Math.floor(record.durationMs / 1000);
                     this.dom.editDurationMin.value = Math.floor(totalSec / 60);
@@ -866,6 +884,7 @@
                     this.dom.editLocation.value = "";
                     this.dom.editDurationMin.value = "";
                     this.dom.editDurationSec.value = "";
+                    this.dom.editDateTime.value = getNowDateTimeLocal();
                 }
                 
                 this.dom.editModal.classList.remove('opacity-0', 'pointer-events-none');
@@ -884,6 +903,7 @@
                 const min = parseInt(this.dom.editDurationMin.value) || 0;
                 const sec = parseInt(this.dom.editDurationSec.value) || 0;
                 const location = this.dom.editLocation.value;
+                const rawDateTime = this.dom.editDateTime.value;
                 const id = this.dom.editId.value;
 
                 if (isNaN(distance) || distance <= 0) {
@@ -898,10 +918,10 @@
                 // 转换为毫秒数用于统一计算
                 const durationMs = ((min * 60) + sec) * 1000;
                 
+                // 将 datetime-local 格式 (YYYY-MM-DDTHH:MM) 转换回展示格式 (YYYY-MM-DD HH:MM)
                 let dateStr = undefined;
-                if (id) { // 如果是编辑旧记录，尝试保留它原本的创建日期
-                    const oldRecord = this.state.records.find(r => r.id == id);
-                    if (oldRecord) dateStr = oldRecord.date;
+                if (rawDateTime) {
+                    dateStr = rawDateTime.replace('T', ' ');
                 }
 
                 this.addRecordToHistory({
